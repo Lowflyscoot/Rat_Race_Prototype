@@ -414,7 +414,7 @@
      </rect>
     </property>
    </widget>
-   <widget class="QPushButton" name="bossButton">
+   <widget class="QPushButton" name="employerGen">
     <property name="geometry">
      <rect>
       <x>810</x>
@@ -424,10 +424,10 @@
      </rect>
     </property>
     <property name="text">
-     <string>Руководитель</string>
+     <string>Сгенерить балбеса</string>
     </property>
    </widget>
-   <widget class="QPushButton" name="managerButton">
+   <widget class="QPushButton" name="employerSet">
     <property name="geometry">
      <rect>
       <x>810</x>
@@ -437,7 +437,7 @@
      </rect>
     </property>
     <property name="text">
-     <string>Менеджер</string>
+     <string>Посадить балбеса</string>
     </property>
    </widget>
    <widget class="QPushButton" name="brigButton">

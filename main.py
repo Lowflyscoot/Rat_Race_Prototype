@@ -2,7 +2,7 @@ import sys
 from PyQt5 import QtWidgets, uic
 from PyQt5.QtCore import QTimer
 
-from game import Contract, Building
+from game import Contract, Building, Employer
 
 class Ui(QtWidgets.QMainWindow):
     def __init__(self):
@@ -22,6 +22,8 @@ class Ui(QtWidgets.QMainWindow):
             "testing": Building(self.pb_test_1, self.pb_test_2, "testing"),
             "prototyping": Building(self.pb_prototype_1, self.pb_prototype_2, "prototyping"),
         }
+
+        self.employer_tmp = Employer.generate_employer()
 
         self.buildings["projecting"].next_support_build = self.buildings["prototyping"]
         self.buildings["prototyping"].support = True
@@ -44,6 +46,8 @@ class Ui(QtWidgets.QMainWindow):
         self.startButton.clicked.connect(lambda: self.select_building("starting"))
         self.goButton.clicked.connect(self.start_game)
         self.restartButton.clicked.connect(self.restart_game)
+        self.employerGen.clicked.connect(self.employer_generate)
+        self.employerSet.clicked.connect(self.employer_set)
 
         self.slider1.sliderMoved.connect(lambda value: self.update_parameter("financing", value))
         self.slider2.sliderMoved.connect(lambda value: self.update_parameter("crunch", value))
@@ -85,7 +89,7 @@ class Ui(QtWidgets.QMainWindow):
 
     def select_employer(self, employer):
         unit = vars(self.current_building)[employer]
-        self.current_building.current_unit = unit
+        self.current_building.employer = unit
         self.ui_update()
 
     def select_building(self, build_name):
@@ -109,16 +113,27 @@ class Ui(QtWidgets.QMainWindow):
             building.past_build = past_building
             past_building = building
 
+    def employer_generate(self):
+        self.employer_tmp = Employer.generate_employer()
+        self.ui_update()
+
+    def employer_set(self):
+        self.current_building.employer = self.employer_tmp
+        self.employer_generate()
+        self.ui_update()
+
     def ui_update(self):
         out_string = ""
         out_string += f"Current building: {self.current_building}\n"
-        out_string += f"Current unit: {self.current_building.current_unit}\n"
+        out_string += f"Current unit: {self.current_building.employer}\n"
         if self.current_building.current_contract is not None:
             out_string += f"Money: {self.current_building.current_contract.money}\n"
         out_string += f"{self.current_building.speed:.3f}\n"
         out_string += f"Time: {self.time // 60:02}:{self.time % 60:02}\n\n"
         for frame in self.complete_buildings:
             out_string += frame + "\n"
+
+        out_string += f"{self.employer_tmp.name} {self.employer_tmp.motivation} {self.employer_tmp.technical_skills}"
 
         self.continue_check()
         self.complete_check()
@@ -127,16 +142,16 @@ class Ui(QtWidgets.QMainWindow):
 
         self.slider1.setValue(int(self.current_building.financing))
         self.slider2.setValue(int(self.current_building.crunch))
-        self.slider3.setValue(int(self.current_building.current_unit.technical_skills))
-        self.slider4.setValue(int(self.current_building.current_unit.motivation))
+        self.slider3.setValue(int(self.current_building.employer.technical_skills))
+        self.slider4.setValue(int(self.current_building.employer.motivation))
 
         self.lineEdit_1.setText(f"Financing: {self.current_building.financing:.3f}")
         self.lineEdit_2.setText(f"Crunch: {self.current_building.crunch:.3f}")
-        self.lineEdit_3.setText(f"Skills: {self.current_building.current_unit.technical_skills:.3f}")
-        self.lineEdit_4.setText(f"Motivation: {self.current_building.current_unit.motivation:.3f}")
+        self.lineEdit_3.setText(f"Skills: {self.current_building.employer.technical_skills:.3f}")
+        self.lineEdit_4.setText(f"Motivation: {self.current_building.employer.motivation:.3f}")
 
     def update_employer(self, unit_name, value):
-        vars(self.current_building.current_unit)[unit_name] = float(value)
+        vars(self.current_building.employer)[unit_name] = float(value)
         self.ui_update()
 
     def update_progress_bars(self):

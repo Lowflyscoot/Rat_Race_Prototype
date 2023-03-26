@@ -1,4 +1,4 @@
-from random import randint
+from random import randint, choice
 
 class Contract():
     def __init__(self):
@@ -8,15 +8,27 @@ class Contract():
         self.goal = "Просто выжить"
 
 class Employer():
-    def __init__(self, name):
+    motivation_types = {"Балбес": 20, "Середнячок": 50, "Прилежный": 50, "Работник месяца": 70, "Всё ещё не уволеный": 30, "Кофеман": 50, "Так-то молодец": 65, "Пропащий": 30, "Трудоголик": 80}
+    skill_types = {", но гайки крутить умеет":50, ", который построил реактор":70, ", но бестолочь":30, "мальчик-гений":80, "сын маминой подруги":65 , "уберите его с площадки":20 }
+
+    def __init__(self, name, skill_value, motivation_value):
         self.name = name
-        self.technical_skills = 99.0
-        self.false_motivation = 0.0
-        self.motivation = 99.0
+        self.technical_skills = float(skill_value)
+        self.lost_motivation = 0.0
+        self.motivation = float(motivation_value)
         self.weekend = False
 
     def __str__(self):
         return self.name
+
+    @classmethod
+    def generate_employer(cls):
+        name, motivation = choice(list(cls.motivation_types.items()))
+        motivation = randint(motivation - 20, motivation + 20)
+        part_name, skill = choice(list(cls.skill_types.items()))
+        skill = randint(skill - 20, skill + 20)
+        name += " " + part_name
+        return cls(name, skill, motivation)
 
 class Building():
     def __init__(self, bar1_obj, bar2_obj, name):
@@ -30,8 +42,7 @@ class Building():
         self.financing = 20.0
         self.crunch = 30.0
         self.minimal_take_level = 90
-        self.employer = Employer("emp_boss")
-        self.current_unit = self.employer
+        self.employer = Employer("Nope", 50, 50)
         self.weak_spots = 0
         self.work_now = False
         self.work_complete = False
@@ -54,7 +65,11 @@ class Building():
 
     def set_speed(self):
         if self.current_contract is not None:
-            result_speed = (10 * (self.employer.technical_skills * (self.employer.motivation / 100) - self.current_contract.difficulty) / 100) / ((100 - self.crunch) / 100)
+            result_speed = 5
+            result_speed += self.employer.technical_skills * (self.employer.motivation / 100)
+            result_speed *= self.current_contract.difficulty / 100
+            result_speed *= 1 + (self.crunch / 100)
+            # result_speed = (10 * (self.employer.technical_skills * (self.employer.motivation / 100) - self.current_contract.difficulty) / 100) / ((100 - self.crunch) / 100)
             if self.bonus_speed_timer != 0:
                 result_speed += 10
             if result_speed > 100:
@@ -75,9 +90,9 @@ class Building():
                 if self.employer.weekend == False:
                     if self.employer.motivation > 0.0:
                         if self.speed > 0.0:
-                            tmp = (0.02 + 0.02 * (self.crunch / 10)) * (1 - self.financing / 100)
+                            tmp = (0.02 + 0.05 * (self.crunch / 10)) * (1 - self.financing / 100)
                             self.employer.motivation -= tmp
-                            self.employer.false_motivation += tmp
+                            self.employer.lost_motivation += tmp
                         else:
                             self.employer.weekend = True
                     else:
@@ -86,9 +101,9 @@ class Building():
                     self.calc_bars()
 
                 else:
-                    if self.employer.false_motivation >= 0.1:
-                        self.employer.motivation += 0.1
-                        self.employer.false_motivation -= 0.1
+                    if self.employer.lost_motivation >= 0.2:
+                        self.employer.motivation += 0.2
+                        self.employer.lost_motivation -= 0.2
                     else:
                         self.employer.weekend = False
 
@@ -96,8 +111,8 @@ class Building():
         self.progress += self.speed
         if self.progress >= 100:
             self.progress = 0
-            if self.success + 3 < 100 and not self.support:
-                self.success += 3
+            if self.success + 6 < 100 and not self.support:
+                self.success += 6
             elif not self.support:
                 self.success = 100
                 self.work_complete = True
