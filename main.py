@@ -13,20 +13,27 @@ class Ui(QtWidgets.QMainWindow):
 
         self.complete_buildings = []
 
-        self.main_buildings = {
+        self.buildings = {
             "science": Building(self.pb_science_1, self.pb_science_2, "science"),
             "projecting": Building(self.pb_project_1, self.pb_project_2, "projecting"),
             "assembling": Building(self.pb_assembly_1, self.pb_assembly_2, "assembling"),
             "control": Building(self.pb_control_1, self.pb_control_2, "control"),
-            "starting": Building(self.pb_start_1, self.pb_start_2, "starting")
-        }
-
-        self.support_buildings = {
+            "starting": Building(self.pb_start_1, self.pb_start_2, "starting"),
             "testing": Building(self.pb_test_1, self.pb_test_2, "testing"),
             "prototyping": Building(self.pb_prototype_1, self.pb_prototype_2, "prototyping"),
         }
 
-        self.current_building = self.main_buildings["science"]
+        self.buildings["projecting"].next_support_build = self.buildings["prototyping"]
+        self.buildings["prototyping"].support = True
+        self.buildings["prototyping"].past_build = self.buildings["projecting"]
+        self.buildings["prototyping"].next_build = self.buildings["testing"]
+        self.buildings["testing"].support = True
+        self.buildings["testing"].past_build = self.buildings["prototyping"]
+        self.buildings["testing"].next_build = self.buildings["projecting"]
+
+        self.set_buildings_order()
+
+        self.current_building = self.buildings["science"]
 
         self.projectButton.clicked.connect(lambda: self.select_building("projecting"))
         self.prototypeButton.clicked.connect(lambda: self.select_building("prototyping"))
@@ -43,12 +50,12 @@ class Ui(QtWidgets.QMainWindow):
         self.slider3.sliderMoved.connect(lambda value: self.update_employer("technical_skills", value))
         self.slider4.sliderMoved.connect(lambda value: self.update_employer("motivation", value))
 
-        tmp = 0
         self.current_building.set_contract(Contract())
-        for _, build in self.main_buildings.items():
-            build.crunch = 90
-            build.financing = 90
-            tmp += 15
+        # tmp = 0
+        # for _, build in self.buildings.items():
+        #     build.crunch = 90
+        #     build.financing = 90
+        #     tmp += 15
 
         self.timer = QTimer()
         self.timer.setSingleShot(False)
@@ -72,6 +79,9 @@ class Ui(QtWidgets.QMainWindow):
     def second_clock(self):
         if self.time > 0:
             self.time -= 1
+        for _, build in self.buildings.items():
+            if build.bonus_speed_timer > 0:
+                build.bonus_speed_timer -= 1
 
     def select_employer(self, employer):
         unit = vars(self.current_building)[employer]
@@ -79,12 +89,25 @@ class Ui(QtWidgets.QMainWindow):
         self.ui_update()
 
     def select_building(self, build_name):
-        self.current_building = self.main_buildings[build_name]
+        self.current_building = self.buildings[build_name]
         self.ui_update()
 
     def update_parameter(self, parameter_name, value):
         vars(self.current_building)[parameter_name] = float(value)
         self.ui_update()
+
+    def set_buildings_order(self):
+        first = True
+        for _, building in self.buildings.items():
+            if first:
+                first = False
+                past_building = building
+                continue
+            if building.support:
+                return
+            past_building.next_build = building
+            building.past_build = past_building
+            past_building = building
 
     def ui_update(self):
         out_string = ""
@@ -118,28 +141,31 @@ class Ui(QtWidgets.QMainWindow):
 
     def update_progress_bars(self):
         self.ui_update()
-        for _, building in self.main_buildings.items():
+        for _, building in self.buildings.items():
             if building.work_now == True:
                 building.set_speed()
                 building.calc_progress()
                 progress = building.get_progress()
                 building.bar_1.setValue(int(progress))
 
-
     def restart_game(self):
         self.timer.stop()
         self.sec_timer.stop()
-        for _, build in self.main_buildings.items():
-            build.current_contract = Contract()
+        for _, build in self.buildings.items():
+            build.work_now = False
+            build.work_complete = False
+            build.current_contract = None
             build.bar_1.setValue(0)
             build.bar_2.setValue(0)
             build.progress = 0
             build.success = 0
+        self.buildings["science"].set_contract(Contract())
+        self.current_building = self.buildings["science"]
         self.ui_update()
         self.complete_buildings.clear()
 
     def complete_check(self):
-        for name, build in self.main_buildings.items():
+        for name, build in self.buildings.items():
             if build.work_complete == True:
                 build.work_complete = False
                 text = f"{build.name} {build.crunch:.0f} {build.weak_spots}"
@@ -148,7 +174,7 @@ class Ui(QtWidgets.QMainWindow):
     def continue_check(self):
         contract_gave = False
         self.contract = None
-        for name, build in self.main_buildings.items():
+        for name, build in self.buildings.items():
             if contract_gave == True:
                 build.set_contract(self.contract)
                 return

@@ -27,8 +27,9 @@ class Building():
         self.name = name
         self.bar_1 = bar1_obj
         self.bar_2 = bar2_obj
-        self.financing = 90.0
-        self.crunch = 90.0
+        self.financing = 20.0
+        self.crunch = 30.0
+        self.minimal_take_level = 90
         self.employer = Employer("emp_boss")
         self.current_unit = self.employer
         self.weak_spots = 0
@@ -36,6 +37,13 @@ class Building():
         self.work_complete = False
 
         self.current_contract = None
+
+        self.support = False
+        self.next_build = None
+        self.past_build = None
+        self.next_support_build = None
+        self.connected_build = None
+        self.bonus_speed_timer = 0
 
     def __str__(self):
         return self.name
@@ -47,6 +55,8 @@ class Building():
     def set_speed(self):
         if self.current_contract is not None:
             result_speed = (10 * (self.employer.technical_skills * (self.employer.motivation / 100) - self.current_contract.difficulty) / 100) / ((100 - self.crunch) / 100)
+            if self.bonus_speed_timer != 0:
+                result_speed += 10
             if result_speed > 100:
                 result_speed = 100
             self.speed = result_speed
@@ -86,11 +96,22 @@ class Building():
         self.progress += self.speed
         if self.progress >= 100:
             self.progress = 0
-            if self.success + 3 < 100:
+            if self.success + 3 < 100 and not self.support:
                 self.success += 3
-            else:
+            elif not self.support:
                 self.success = 100
                 self.work_complete = True
+            if self.next_support_build is not None:
+                self.next_support_build.current_contract = self.current_contract
+                self.next_support_build.work_now = True
+            if self.support:
+                if not self.next_build.support:
+                    self.next_build.bonus_speed_timer = 10
+                else:
+                    self.next_build.current_contract = self.current_contract
+                    self.next_build.work_now = True
+                self.work_now = False
+
             self.bar_2.setValue(self.success)
 
     def calc_money(self):
@@ -100,8 +121,9 @@ class Building():
         return self.progress
 
     def try_give_contract(self):
-        if self.work_complete == True and self.work_now == True:
-            self.work_now = False
-            return self.current_contract
-        else:
-            return None
+        if self.next_build is not None:
+            if self.work_now == True and self.success >= self.next_build.minimal_take_level and self.next_build.current_contract is None:
+                return self.current_contract
+            else:
+                return None
+        return None
