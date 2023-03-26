@@ -13,15 +13,20 @@ class Ui(QtWidgets.QMainWindow):
 
         self.complete_buildings = []
 
-        self.buildings = {"projecting": Building(self.pb_project_1, self.pb_project_2, "projecting"),
-                         "prototyping": Building(self.pb_prototype_1, self.pb_prototype_2, "prototyping"),
-                         "assembling": Building(self.pb_assembly_1, self.pb_assembly_2, "assembling"),
-                         "science": Building(self.pb_science_1, self.pb_science_2, "science"),
-                         "testing": Building(self.pb_test_1, self.pb_test_2, "testing"),
-                         "starting": Building(self.pb_start_1, self.pb_start_2, "starting"),
-                         "control": Building(self.pb_control_1, self.pb_control_2, "control")}
+        self.main_buildings = {
+            "science": Building(self.pb_science_1, self.pb_science_2, "science"),
+            "projecting": Building(self.pb_project_1, self.pb_project_2, "projecting"),
+            "assembling": Building(self.pb_assembly_1, self.pb_assembly_2, "assembling"),
+            "control": Building(self.pb_control_1, self.pb_control_2, "control"),
+            "starting": Building(self.pb_start_1, self.pb_start_2, "starting")
+        }
 
-        self.current_building = self.buildings["projecting"]
+        self.support_buildings = {
+            "testing": Building(self.pb_test_1, self.pb_test_2, "testing"),
+            "prototyping": Building(self.pb_prototype_1, self.pb_prototype_2, "prototyping"),
+        }
+
+        self.current_building = self.main_buildings["science"]
 
         self.projectButton.clicked.connect(lambda: self.select_building("projecting"))
         self.prototypeButton.clicked.connect(lambda: self.select_building("prototyping"))
@@ -40,7 +45,7 @@ class Ui(QtWidgets.QMainWindow):
 
         tmp = 0
         self.current_building.set_contract(Contract())
-        for _, build in self.buildings.items():
+        for _, build in self.main_buildings.items():
             build.crunch = 90
             build.financing = 90
             tmp += 15
@@ -74,7 +79,7 @@ class Ui(QtWidgets.QMainWindow):
         self.ui_update()
 
     def select_building(self, build_name):
-        self.current_building = self.buildings[build_name]
+        self.current_building = self.main_buildings[build_name]
         self.ui_update()
 
     def update_parameter(self, parameter_name, value):
@@ -113,7 +118,7 @@ class Ui(QtWidgets.QMainWindow):
 
     def update_progress_bars(self):
         self.ui_update()
-        for _, building in self.buildings.items():
+        for _, building in self.main_buildings.items():
             if building.work_now == True:
                 building.set_speed()
                 building.calc_progress()
@@ -124,7 +129,7 @@ class Ui(QtWidgets.QMainWindow):
     def restart_game(self):
         self.timer.stop()
         self.sec_timer.stop()
-        for _, build in self.buildings.items():
+        for _, build in self.main_buildings.items():
             build.current_contract = Contract()
             build.bar_1.setValue(0)
             build.bar_2.setValue(0)
@@ -134,7 +139,7 @@ class Ui(QtWidgets.QMainWindow):
         self.complete_buildings.clear()
 
     def complete_check(self):
-        for name, build in self.buildings.items():
+        for name, build in self.main_buildings.items():
             if build.work_complete == True:
                 build.work_complete = False
                 text = f"{build.name} {build.crunch:.0f} {build.weak_spots}"
@@ -143,12 +148,12 @@ class Ui(QtWidgets.QMainWindow):
     def continue_check(self):
         contract_gave = False
         self.contract = None
-        for name, build in self.buildings.items():
+        for name, build in self.main_buildings.items():
             if contract_gave == True:
                 build.set_contract(self.contract)
                 return
             self.contract = build.try_give_contract()
-            if self.contract is not None and name != "control":
+            if self.contract is not None and name != "starting":
                 contract_gave = True
 
 
